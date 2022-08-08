@@ -1,0 +1,23 @@
+{
+  "name": "raca",
+  "version": "1.0.0",
+  "description": "",
+  "main": "raca.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+		"init": "node checkCovalent.js -i",
+    "start": "node checkCovalent.js -r"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bn.js": "^5.2.0",
+    "commander": "^8.3.0",
+    "date-and-time": "^2.4.0",
+    "dotenv": "^10.0.0",
+    "mysql": "^2.18.1",
+    "set-interval-async": "^2.0.3",
+    "web3": "1.2.7",
+    "web3-providers-http": "^1.6.1"
+  }
+}
