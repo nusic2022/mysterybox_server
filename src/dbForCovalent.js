@@ -12,6 +12,8 @@ const connection = mysql.createConnection({
 });
 
 const tableName = process.env.TABLE_NAME;
+const nftTableName = process.env.NFT_TABLE_NAME;
+
 const addDB = async (data) => {	
 	try {
 		// Check if duplicated transaction hash
@@ -73,6 +75,96 @@ const updateStatusDB = async (data) => {
 }
 
 /**
+ * While mint a new NFT token
+ * @param {*} mintNftData 
+ * @returns 
+ */
+ const addNFTDB = async (mintNftData, crossFromChainId, crossFromNFTAddress) => {
+	try {
+		// Check if duplicated transaction hash
+		// console.log('addNFTDB', mintNftData.tokenId)
+		const sql1 = `select * from ${nftTableName} where 
+									chainId = ${mintNftData.chainId} and nftAddress = '${mintNftData.contractAddress}' and tokenId = ${mintNftData.tokenId}`;
+		return connection.query(sql1, async function(error, result, fields) {
+			if(result !== undefined && result.length > 0) {
+				if(result[0].owner.toLowerCase() !== mintNftData.transferTo.toLowerCase()) {
+					// Update owner
+					const sql = `update ${nftTableName} set owner = '${mintNftData.transferTo}' 
+											 where chainId = ${mintNftData.chainId} and nftAddress = '${mintNftData.contractAddress}' and tokenId = ${mintNftData.tokenId}`;
+					const promise = new Promise((resolve, reject) => {
+						connection.query(
+							sql,
+							function (error2, data2, fields) {
+								if(error2) return reject(error2);
+								else {
+									console.log(`=> ${mintNftData.blockNumber} Transfer #${mintNftData.tokenId} to ${mintNftData.transferTo} hash ${mintNftData.transactionHash}`);
+									return resolve(data2);
+								}
+							}
+						)
+					})
+					return promise;
+				} else {
+					return false;
+				}
+			} else {
+				const sql = `INSERT into ${nftTableName}(chainId, nftAddress, tokenId, owner, createAt) 
+										 values ('${mintNftData.chainId}', '${mintNftData.contractAddress}', '${mintNftData.tokenId}', '${mintNftData.transferTo}', now())`;
+				const promise = new Promise((resolve, reject) => {
+					connection.query(
+						sql,
+						function (error, data, fields) {
+							if(error || data === undefined) return reject(error);
+							else {
+								console.log(`=> ${mintNftData.blockNumber} Mint tokenId #${mintNftData.tokenId} hash ${mintNftData.transactionHash}`);
+							}
+						}
+					)
+				})
+				return promise;	
+			}
+		})
+	} catch (error) {
+		console.error(error);
+	}
+}
+
+/**
+ * While transfer NFT token
+ * @param {*} buyData 
+ * @returns 
+ */
+const updateOwnerNFTDB = async (mintNftData) => {
+	try {
+		const sql = `select * from ${nftTableName} where chainId = ${mintNftData.chainId} and nftAddress = '${mintNftData.contractAddress}' and tokenId = ${mintNftData.tokenId}`;
+		return connection.query(
+			sql, 
+			async function(error, data1, fields) {
+				if(data1 === undefined || data1.length === 0) return false;
+				else {
+					const sql = `update ${nftTableName} set owner = '${mintNftData.transferTo}' where chainId = ${mintNftData.chainId} and nftAddress = '${mintNftData.contractAddress}' and tokenId = ${mintNftData.tokenId}`;
+					const promise = new Promise((resolve, reject) => {
+						connection.query(
+							sql,
+							function (error, data2, fields) {
+								if(error) return reject(error);
+								else {
+									// const dt = date.format(new Date(mintNftData.dateTime * 1000), 'YYYY-MM-DD HH:mm:ss');
+									console.log(`=> ${mintNftData.blockNumber} Transfer #${mintNftData.tokenId} to ${mintNftData.transferTo} hash ${mintNftData.transactionHash}`);
+									return resolve(data2);
+								}
+							}
+						)
+					})
+					return promise;
+				}
+		})
+	} catch (error) {
+		console.error(error);
+	}
+}
+
+/**
  * Cause the database duplicated write, do the following sql and delete the duplicated records
  */
 const deleteDuplicateRowsByField = async (field) => {
@@ -91,4 +183,6 @@ module.exports = {
 	addDB,
 	updateStatusDB,
 	deleteDuplicateRowsByField,
+	addNFTDB,
+	updateOwnerNFTDB
 }
