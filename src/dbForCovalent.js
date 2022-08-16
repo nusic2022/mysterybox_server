@@ -109,7 +109,7 @@ const updateStatusDB = async (data) => {
 				}
 			} else {
 				const sql = `INSERT into ${nftTableName}(chainId, nftAddress, tokenId, owner, createAt) 
-										 values ('${mintNftData.chainId}', '${mintNftData.contractAddress}', '${mintNftData.tokenId}', '${mintNftData.transferTo}', now())`;
+										 values ('${mintNftData.chainId}', '${mintNftData.contractAddress}', '${mintNftData.tokenId}', '${mintNftData.transferTo}', unix_timestamp())`;
 				const promise = new Promise((resolve, reject) => {
 					connection.query(
 						sql,
